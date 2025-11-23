@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Response
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -277,3 +277,30 @@ async def search_books(title: str, db: Session = Depends(get_db)):
             detail=f"No books found with title containing '{title}'"
         )
     return books
+
+@app.get("/docs/markdown", include_in_schema=False)
+async def get_markdown_docs():
+    """Генерирует Markdown документацию API"""
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    
+    markdown_content = f"# {openapi_schema['info']['title']}\n\n"
+    markdown_content += f"**Версия**: {openapi_schema['info']['version']}\n\n"
+    markdown_content += f"**Описание**: {openapi_schema['info']['description']}\n\n"
+    
+    # Добавляем информацию о endpoint-ах
+    for path, methods in openapi_schema['paths'].items():
+        for method, details in methods.items():
+            markdown_content += f"## {method.upper()} {path}\n\n"
+            markdown_content += f"**Описание**: {details.get('summary', '')}\n\n"
+            if 'parameters' in details:
+                markdown_content += "**Параметры**:\n"
+                for param in details['parameters']:
+                    markdown_content += f"- `{param['name']}` ({param['in']}): {param.get('description', '')}\n"
+                markdown_content += "\n"
+    
+    return Response(content=markdown_content, media_type="text/markdown")
