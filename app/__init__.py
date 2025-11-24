@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Response
+from fastapi.responses import FileResponse
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -13,7 +14,7 @@ from .crud.book import (
     get_books, 
     get_book, 
     create_book, 
-    update_book, 
+    update_book,
     delete_book,
     search_books_by_title
 )
@@ -302,5 +303,11 @@ async def get_markdown_docs():
                 for param in details['parameters']:
                     markdown_content += f"- `{param['name']}` ({param['in']}): {param.get('description', '')}\n"
                 markdown_content += "\n"
-    
+
     return Response(content=markdown_content, media_type="text/markdown")
+
+
+@app.get("/docs/html")
+async def get_html_docs():
+    """Генерирует HTML документацию API"""
+    return FileResponse("./templates/schema.html")
